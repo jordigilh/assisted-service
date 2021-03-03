@@ -54,22 +54,22 @@ func (l *lsOperator) ValidateHost(context.Context, *common.Cluster, *models.Host
 }
 
 // GetCPURequirementForWorker provides worker CPU requirements for the operator
-func (l *lsOperator) GetCPURequirementForWorker(context.Context, *common.Cluster) (int64, error) {
+func (l *lsOperator) GetCPURequirementForWorker(cluster *common.Cluster) (int64, error) {
 	return 0, nil
 }
 
 // GetCPURequirementForMaster provides master CPU requirements for the operator
-func (l *lsOperator) GetCPURequirementForMaster(context.Context, *common.Cluster) (int64, error) {
+func (l *lsOperator) GetCPURequirementForMaster(cluster *common.Cluster) (int64, error) {
 	return 0, nil
 }
 
 // GetMemoryRequirementForWorker provides worker memory requirements for the operator
-func (l *lsOperator) GetMemoryRequirementForWorker(context.Context, *common.Cluster) (int64, error) {
+func (l *lsOperator) GetMemoryRequirementForWorker(cluster *common.Cluster) (int64, error) {
 	return 0, nil
 }
 
 // GetMemoryRequirementForMaster provides master memory requirements for the operator
-func (l *lsOperator) GetMemoryRequirementForMaster(context.Context, *common.Cluster) (int64, error) {
+func (l *lsOperator) GetMemoryRequirementForMaster(cluster *common.Cluster) (int64, error) {
 	return 0, nil
 }
 
@@ -88,6 +88,7 @@ func (l *lsOperator) GetDisksRequirementForMaster(context.Context, *common.Clust
 // GetDisksRequirementForWorker provides a number of disks required in a worker
 func (l *lsOperator) GetDisksRequirementForWorker(context.Context, *common.Cluster) (int64, error) {
 	return 1, nil
+
 }
 
 // GetProperties provides description of operator properties: none required

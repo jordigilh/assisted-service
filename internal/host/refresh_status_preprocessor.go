@@ -25,7 +25,7 @@ type refreshPreprocessor struct {
 func newRefreshPreprocessor(log logrus.FieldLogger, hwValidatorCfg *hardware.ValidatorCfg, hwValidator hardware.Validator, operatorsApi operators.API) *refreshPreprocessor {
 	return &refreshPreprocessor{
 		log:          log,
-		validations:  newValidations(log, hwValidatorCfg, hwValidator),
+		validations:  newValidations(log, hwValidatorCfg, hwValidator, operatorsApi),
 		operatorsApi: operatorsApi,
 	}
 }
@@ -75,11 +75,12 @@ func (r *refreshPreprocessor) preprocess(c *validationContext) (map[validationID
 	return stateMachineInput, validationsOutput, nil
 }
 
-func newValidations(log logrus.FieldLogger, hwValidatorCfg *hardware.ValidatorCfg, hwValidator hardware.Validator) []validation {
+func newValidations(log logrus.FieldLogger, hwValidatorCfg *hardware.ValidatorCfg, hwValidator hardware.Validator, operatorsAPI operators.API) []validation {
 	v := validator{
 		log:            log,
 		hwValidatorCfg: hwValidatorCfg,
 		hwValidator:    hwValidator,
+		operatorsAPI:   operatorsAPI,
 	}
 	ret := []validation{
 		{
@@ -114,8 +115,8 @@ func newValidations(log logrus.FieldLogger, hwValidatorCfg *hardware.ValidatorCf
 		},
 		{
 			id:        HasCPUCoresForRole,
-			condition: v.hasCpuCoresForRole,
-			formatter: v.printHasCpuCoresForRole,
+			condition: v.hasCPUCoresForRole,
+			formatter: v.printHasCPUCoresForRole,
 		},
 		{
 			id:        HasMemoryForRole,

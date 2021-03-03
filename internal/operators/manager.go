@@ -44,6 +44,10 @@ type API interface {
 	GetSupportedOperators() []string
 	// GetOperatorProperties provides description of properties of an operator
 	GetOperatorProperties(operatorName string) (models.OperatorProperties, error)
+	// GetCPURequirementForWorker provides worker CPU requirements for the operator
+	GetCPURequirementForRole(cluster *common.Cluster, role models.HostRole) (int64, error)
+	// GetMemoryRequirementForWorker provides worker memory requirements for the operator in Bytes
+	GetMemoryRequirementForRole(cluster *common.Cluster, role models.HostRole) (int64, error)
 }
 
 // GenerateManifests generates manifests for all enabled operators.
@@ -105,9 +109,9 @@ func (mgr *Manager) ValidateHost(ctx context.Context, cluster *common.Cluster, h
 
 	// To track operators that are disabled or not present in the cluster configuration, but have to be present
 	// in the validation results and marked as valid.
-	pendingOperators := make(map[string]bool)
+	pendingOperators := make(map[string]struct{})
 	for k := range mgr.olmOperators {
-		pendingOperators[k] = true
+		pendingOperators[k] = struct{}{}
 	}
 
 	for _, clusterOperator := range cluster.MonitoredOperators {
@@ -152,9 +156,9 @@ func (mgr *Manager) ValidateCluster(ctx context.Context, cluster *common.Cluster
 
 	results := make([]api.ValidationResult, 0, len(mgr.olmOperators))
 
-	pendingOperators := make(map[string]bool)
+	pendingOperators := make(map[string]struct{})
 	for k := range mgr.olmOperators {
-		pendingOperators[k] = true
+		pendingOperators[k] = struct{}{}
 	}
 
 	for _, clusterOperator := range cluster.MonitoredOperators {
@@ -309,4 +313,112 @@ func (mgr *Manager) GetSupportedOperatorsByType(operatorType models.OperatorType
 	}
 
 	return operators
+}
+
+// GetMemoryRequirementForRole returns the amount of usable memory required in Bytes in the host to be able to install all the enabled operators and their dependencies.
+// The value is determined by the sum of each of the enabled operators.
+func (mgr *Manager) GetMemoryRequirementForRole(cluster *common.Cluster, role models.HostRole) (int64, error) {
+	switch role {
+	case models.HostRoleMaster:
+		m, err := mgr.getMemoryRequirementForMaster(cluster)
+		if err != nil {
+			return 0, err
+		}
+		return m, nil
+	case models.HostRoleWorker:
+		m, err := mgr.getMemoryRequirementForWorker(cluster)
+		if err != nil {
+			return 0, err
+		}
+		return m, nil
+	default:
+		return 0, nil
+
+	}
+}
+
+func (mgr *Manager) getMemoryRequirementForMaster(cluster *common.Cluster) (int64, error) {
+
+	var t int64
+	for _, o := range cluster.MonitoredOperators {
+		if o.OperatorType != models.OperatorTypeOlm {
+			continue
+		}
+		m, err := mgr.olmOperators[o.Name].GetMemoryRequirementForMaster(cluster)
+		if err != nil {
+			return 0, err
+		}
+		t += m
+	}
+	return t, nil
+}
+
+func (mgr *Manager) getMemoryRequirementForWorker(cluster *common.Cluster) (int64, error) {
+
+	var t int64
+	for _, o := range cluster.MonitoredOperators {
+		if o.OperatorType != models.OperatorTypeOlm {
+			continue
+		}
+		m, err := mgr.olmOperators[o.Name].GetMemoryRequirementForWorker(cluster)
+		if err != nil {
+			return 0, err
+		}
+		t += m
+	}
+	return t, nil
+}
+
+// GetCPURequirementForRole returns the CPU core count available the host must have to install all the enabled operators and their dependencies.
+// The value is determined by the sum of each of the enabled operators.
+func (mgr *Manager) GetCPURequirementForRole(cluster *common.Cluster, role models.HostRole) (int64, error) {
+
+	switch role {
+	case models.HostRoleMaster:
+		m, err := mgr.getCPURequirementForMaster(cluster)
+		if err != nil {
+			return 0, err
+		}
+		return m, nil
+	case models.HostRoleWorker:
+		m, err := mgr.getCPURequirementForWorker(cluster)
+		if err != nil {
+			return 0, err
+		}
+		return m, nil
+	default:
+		return 0, nil
+	}
+}
+
+func (mgr *Manager) getCPURequirementForMaster(cluster *common.Cluster) (int64, error) {
+
+	var t int64
+	for _, o := range cluster.MonitoredOperators {
+		if o.OperatorType != models.OperatorTypeOlm {
+			continue
+		}
+		m, err := mgr.olmOperators[o.Name].GetCPURequirementForMaster(cluster)
+		if err != nil {
+			return 0, err
+		}
+		t += m
+	}
+	return t, nil
+}
+
+func (mgr *Manager) getCPURequirementForWorker(cluster *common.Cluster) (int64, error) {
+
+	var t int64
+	for _, o := range cluster.MonitoredOperators {
+		if o.OperatorType != models.OperatorTypeOlm {
+			continue
+		}
+		m, err := mgr.olmOperators[o.Name].GetCPURequirementForWorker(cluster)
+		if err != nil {
+			return 0, err
+		}
+		t += m
+	}
+	return t, nil
 }

@@ -48,3 +48,18 @@ func (mr *MockOCSValidatorMockRecorder) ValidateRequirements(cluster interface{}
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateRequirements", reflect.TypeOf((*MockOCSValidator)(nil).ValidateRequirements), cluster)
 }
+
+// IdentifyDeploymentTypeForResource mocks base method
+func (m *MockOCSValidator) IdentifyDeploymentTypeForResource(cluster *models.Cluster, res resource) (ocsDeploymentType, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IdentifyDeploymentTypeForResource", cluster, res)
+	ret0, _ := ret[0].(ocsDeploymentType)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IdentifyDeploymentTypeForResource indicates an expected call of IdentifyDeploymentTypeForResource
+func (mr *MockOCSValidatorMockRecorder) IdentifyDeploymentTypeForResource(cluster, res interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentifyDeploymentTypeForResource", reflect.TypeOf((*MockOCSValidator)(nil).IdentifyDeploymentTypeForResource), cluster, res)
+}

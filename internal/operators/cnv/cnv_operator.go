@@ -74,22 +74,22 @@ func (o *operator) ValidateHost(ctx context.Context, cluster *common.Cluster, ho
 	}
 	// TODO: validate available devices on worker node like gpu and sr-iov and check whether there is enough memory to support them
 	if host.Role == models.HostRoleWorker {
-		cpu, _ := o.GetCPURequirementForWorker(ctx, cluster)
+		cpu, _ := o.GetCPURequirementForWorker(cluster)
 		if inventory.CPU.Count < cpu {
 			return api.ValidationResult{Status: api.Failure, ValidationId: o.GetClusterValidationID(), Reasons: []string{fmt.Sprintf("Insufficient CPU to deploy CNV. Required CPU count is %d but found %d ", cpu, inventory.CPU.Count)}}, nil
 		}
-		mem, _ := o.GetMemoryRequirementForWorker(ctx, cluster)
+		mem, _ := o.GetMemoryRequirementForWorker(cluster)
 		if inventory.Memory.UsableBytes < mem {
 			usableMemory := hardware.BytesToMib(inventory.Memory.UsableBytes)
 			memBytes := hardware.BytesToMib(mem)
 			return api.ValidationResult{Status: api.Failure, ValidationId: o.GetClusterValidationID(), Reasons: []string{fmt.Sprintf("Insufficient memory to deploy CNV. Required memory is %d MiB but found %d MiB", memBytes, usableMemory)}}, nil
 		}
 	} else if host.Role == models.HostRoleMaster {
-		cpu, _ := o.GetCPURequirementForMaster(ctx, cluster)
+		cpu, _ := o.GetCPURequirementForMaster(cluster)
 		if inventory.CPU.Count < cpu {
 			return api.ValidationResult{Status: api.Failure, ValidationId: o.GetClusterValidationID(), Reasons: []string{fmt.Sprintf("Insufficient CPU to deploy CNV. Required CPU count is %d but found %d ", cpu, inventory.CPU.Count)}}, nil
 		}
-		mem, _ := o.GetMemoryRequirementForMaster(ctx, cluster)
+		mem, _ := o.GetMemoryRequirementForMaster(cluster)
 		if inventory.Memory.UsableBytes < mem {
 			usableMemory := hardware.BytesToMib(inventory.Memory.UsableBytes)
 			memBytes := hardware.BytesToMib(mem)
@@ -100,22 +100,22 @@ func (o *operator) ValidateHost(ctx context.Context, cluster *common.Cluster, ho
 }
 
 // GetCPURequirementForWorker provides worker CPU requirements for the operator
-func (o *operator) GetCPURequirementForWorker(context.Context, *common.Cluster) (int64, error) {
+func (o *operator) GetCPURequirementForWorker(*common.Cluster) (int64, error) {
 	return workerCPU, nil
 }
 
 // GetCPURequirementForMaster provides master CPU requirements for the operator
-func (o *operator) GetCPURequirementForMaster(context.Context, *common.Cluster) (int64, error) {
+func (o *operator) GetCPURequirementForMaster(*common.Cluster) (int64, error) {
 	return masterCPU, nil
 }
 
 // GetMemoryRequirementForWorker provides worker memory requirements for the operator
-func (o *operator) GetMemoryRequirementForWorker(ctx context.Context, cluster *common.Cluster) (int64, error) {
+func (o *operator) GetMemoryRequirementForWorker(cluster *common.Cluster) (int64, error) {
 	return hardware.MibToBytes(workerMemory), nil
 }
 
 // GetMemoryRequirementForMaster provides master memory requirements for the operator
-func (o *operator) GetMemoryRequirementForMaster(ctx context.Context, cluster *common.Cluster) (int64, error) {
+func (o *operator) GetMemoryRequirementForMaster(cluster *common.Cluster) (int64, error) {
 	return hardware.MibToBytes(masterMemory), nil
 }
 
@@ -127,12 +127,12 @@ func (o *operator) GenerateManifests(c *common.Cluster) (*api.Manifests, error) 
 }
 
 // GetDisksRequirementForMaster provides a number of disks required in a master
-func (o *operator) GetDisksRequirementForMaster(context.Context, *common.Cluster) (int64, error) {
+func (o *operator) GetDisksRequirementForMaster(*common.Cluster) (int64, error) {
 	return 0, nil
 }
 
 // GetDisksRequirementForWorker provides a number of disks required in a worker
-func (o *operator) GetDisksRequirementForWorker(context.Context, *common.Cluster) (int64, error) {
+func (o *operator) GetDisksRequirementForWorker(*common.Cluster) (int64, error) {
 	return 0, nil
 }
 

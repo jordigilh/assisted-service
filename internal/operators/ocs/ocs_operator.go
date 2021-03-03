@@ -2,7 +2,10 @@ package ocs
 
 import (
 	"context"
+	"fmt"
+	"math"
 
+	"github.com/docker/go-units"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift/assisted-service/internal/common"
 	"github.com/openshift/assisted-service/internal/operators/api"
@@ -83,33 +86,86 @@ func (o *ocsOperator) GenerateManifests(cluster *common.Cluster) (*api.Manifests
 }
 
 // GetCPURequirementForWorker provides worker CPU requirements for the operator
-func (o *ocsOperator) GetCPURequirementForWorker(context.Context, *common.Cluster) (int64, error) {
-	return 0, nil
+func (o *ocsOperator) GetCPURequirementForWorker(cluster *common.Cluster) (int64, error) {
+	return o.getPerHostCPURequirement(cluster)
 }
 
 // GetCPURequirementForMaster provides master CPU requirements for the operator
-func (o *ocsOperator) GetCPURequirementForMaster(context.Context, *common.Cluster) (int64, error) {
-	return 0, nil
+func (o *ocsOperator) GetCPURequirementForMaster(cluster *common.Cluster) (int64, error) {
+	return o.getPerHostCPURequirement(cluster)
 }
 
 // GetMemoryRequirementForWorker provides worker memory requirements for the operator in MB
-func (o *ocsOperator) GetMemoryRequirementForWorker(context.Context, *common.Cluster) (int64, error) {
-	return 0, nil
+func (o *ocsOperator) GetMemoryRequirementForWorker(cluster *common.Cluster) (int64, error) {
+	return o.getPerHostMemoryRequirement(cluster)
 }
 
 // GetMemoryRequirementForMaster provides master memory requirements for the operator
-func (o *ocsOperator) GetMemoryRequirementForMaster(context.Context, *common.Cluster) (int64, error) {
-	return 0, nil
+func (o *ocsOperator) GetMemoryRequirementForMaster(cluster *common.Cluster) (int64, error) {
+	return o.getPerHostMemoryRequirement(cluster)
 }
 
-// GetDisksRequirementForMaster provides a number of disks required in a master
-func (o *ocsOperator) GetDisksRequirementForMaster(context.Context, *common.Cluster) (int64, error) {
-	return 0, nil
+// getHostMemoryRequirement returns the minimum amount of memory in Bytes the host must have to install the OCS operator
+func (o *ocsOperator) getPerHostMemoryRequirement(cluster *common.Cluster) (int64, error) {
+	depType, err := o.ocsValidator.IdentifyDeploymentTypeForResource(&cluster.Cluster, memory)
+	if err != nil {
+		return 0, err
+	}
+	var mem, count int64
+
+	switch depType {
+	case compact:
+		mem = o.ocsValidatorConfig.OCSRequiredCompactModeRAMGB * int64(units.GB)
+		count = 3 // in compact mode we deploy only with 3 masters
+	case minimal, standard:
+		mem = o.ocsValidatorConfig.OCSMinimumRAMGB * int64(units.GB)
+		count = o.getWorkerHostsCount(cluster) // OCS only deploys only in workers when not in compact mode.
+	default:
+		return 0, fmt.Errorf("invalid OCS deployment type %v", depType)
+	}
+	if count == 0 {
+		return 0, fmt.Errorf("unable to find hosts with valid inventory")
+	}
+	return mem / count, nil
 }
 
-// GetDisksRequirementForWorker provides a number of disks required in a worker
-func (o *ocsOperator) GetDisksRequirementForWorker(context.Context, *common.Cluster) (int64, error) {
-	return 0, nil
+// getHostCPURequirement returns the minimum amount of CPU core count the cluster must have to install the OCS operator
+func (o *ocsOperator) getPerHostCPURequirement(cluster *common.Cluster) (int64, error) {
+	depType, err := o.ocsValidator.IdentifyDeploymentTypeForResource(&cluster.Cluster, cpu)
+	if err != nil {
+		return 0, err
+	}
+	var cpu, count int64
+	switch depType {
+	case compact:
+		cpu = o.ocsValidatorConfig.OCSRequiredCompactModeCPUCount
+		count = 3 // in compact mode we deploy only with 3 masters
+	case minimal, standard:
+		cpu = o.ocsValidatorConfig.OCSMinimumCPUCount
+		count = o.getWorkerHostsCount(cluster) // OCS only deploys in workers when not in compact mode.
+	default:
+		return 0, fmt.Errorf("invalid OCS deployment type %v", depType)
+	}
+	if count == 0 {
+		return 0, fmt.Errorf("unable to find workers with valid inventory")
+	}
+	t := float64(cpu / count)
+	r := math.Round(t)
+	if r < t { // round up the number of cores
+		return int64(t) + 1, nil
+	}
+	return int64(r), nil
+}
+
+//getWorkerHostsCount returns the number of worker hosts or hosts with role type autoassign
+func (o *ocsOperator) getWorkerHostsCount(cluster *common.Cluster) int64 {
+	var hosts int64
+	for _, h := range cluster.Hosts {
+		if h.Role == models.HostRoleWorker {
+			hosts++
+		}
+	}
+	return hosts
 }
 
 // GetProperties provides description of operator properties: none required
