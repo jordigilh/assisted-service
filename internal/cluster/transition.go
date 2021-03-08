@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/assisted-service/internal/events"
 	"github.com/openshift/assisted-service/internal/host"
 	"github.com/openshift/assisted-service/internal/metrics"
-	"github.com/openshift/assisted-service/internal/network"
 	"github.com/openshift/assisted-service/models"
 	logutil "github.com/openshift/assisted-service/pkg/log"
 	"github.com/pkg/errors"
@@ -84,10 +83,9 @@ func (th *transitionHandler) PostResetCluster(sw stateswitch.StateSwitch, args s
 ////////////////////////////////////////////////////////////////////////////
 
 type TransitionArgsPrepareForInstallation struct {
-	ctx                context.Context
-	db                 *gorm.DB
-	manifestsGenerator network.ManifestsGeneratorAPI
-	metricApi          metrics.API
+	ctx       context.Context
+	db        *gorm.DB
+	metricApi metrics.API
 }
 
 func (th *transitionHandler) PostPrepareForInstallation(sw stateswitch.StateSwitch, args stateswitch.TransitionArgs) error {

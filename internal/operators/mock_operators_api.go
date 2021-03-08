@@ -51,10 +51,10 @@ func (mr *MockAPIMockRecorder) AnyOLMOperatorEnabled(arg0 interface{}) *gomock.C
 }
 
 // GenerateManifests mocks base method
-func (m *MockAPI) GenerateManifests(arg0 *common.Cluster) (map[string]string, error) {
+func (m *MockAPI) GenerateManifests(arg0 *common.Cluster) (map[string][]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GenerateManifests", arg0)
-	ret0, _ := ret[0].(map[string]string)
+	ret0, _ := ret[0].(map[string][]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

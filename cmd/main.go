@@ -274,12 +274,11 @@ func main() {
 	operatorsManager := operators.NewManager(log)
 	hostApi := host.NewManager(log.WithField("pkg", "host-state"), db, eventsHandler, hwValidator,
 		instructionApi, &Options.HWValidatorConfig, metricsManager, &Options.HostConfig, lead, operatorsManager)
-	manifestsApi := manifests.NewManifestsAPI(db, log.WithField("pkg", "manifests"), objectHandler)
-	manifestsGenerator := network.NewManifestsGenerator(manifestsApi)
+	manifestsAPI := manifests.NewManifestsAPI(db, log.WithField("pkg", "manifests"), objectHandler)
+	networkManifestsGenerator := network.NewManifestsGenerator(log)
 	clusterApi := cluster.NewManager(Options.ClusterConfig, log.WithField("pkg", "cluster-state"), db,
-		eventsHandler, hostApi, metricsManager, manifestsGenerator, lead, operatorsManager)
+		eventsHandler, hostApi, metricsManager, networkManifestsGenerator, lead, operatorsManager, manifestsAPI)
 	bootFilesApi := bootfiles.NewBootFilesAPI(log.WithField("pkg", "bootfiles"), objectHandler)
-
 	clusterStateMonitor := thread.New(
 		log.WithField("pkg", "cluster-monitor"), "Cluster State Monitor", Options.ClusterStateMonitorInterval, clusterApi.ClusterMonitoring)
 	clusterStateMonitor.Start()
@@ -344,7 +343,7 @@ func main() {
 		VersionsAPI:           versionHandler,
 		ManagedDomainsAPI:     domainHandler,
 		InnerMiddleware:       innerHandler(),
-		ManifestsAPI:          manifestsApi,
+		ManifestsAPI:          manifestsAPI,
 		BootfilesAPI:          bootFilesApi,
 		OperatorsAPI:          operatorsHandler,
 	})

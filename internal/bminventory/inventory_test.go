@@ -1945,7 +1945,7 @@ var _ = Describe("cluster", func() {
 		})
 		It("happy flow", func() {
 			bm.clusterApi = cluster.NewManager(cluster.Config{}, common.GetTestLog().WithField("pkg", "cluster-monitor"),
-				db, mockEvents, nil, nil, nil, nil, nil)
+				db, mockEvents, nil, nil, nil, nil, nil, nil)
 
 			mockClusterRegisterSuccess(bm, true)
 			noneHaMode := models.ClusterHighAvailabilityModeNone
@@ -1970,7 +1970,7 @@ var _ = Describe("cluster", func() {
 
 		It("create non ha cluster fail", func() {
 			bm.clusterApi = cluster.NewManager(cluster.Config{}, common.GetTestLog().WithField("pkg", "cluster-monitor"),
-				db, mockEvents, nil, nil, nil, nil, nil)
+				db, mockEvents, nil, nil, nil, nil, nil, nil)
 			noneHaMode := models.ClusterHighAvailabilityModeNone
 			insufficientOpenShiftVersionForNoneHA := "4.7"
 			reply := bm.RegisterCluster(ctx, installer.RegisterClusterParams{
@@ -2189,7 +2189,7 @@ var _ = Describe("cluster", func() {
 			Context("RegisterCluster", func() {
 				BeforeEach(func() {
 					bm.clusterApi = cluster.NewManager(cluster.Config{}, common.GetTestLog().WithField("pkg", "cluster-monitor"),
-						db, mockEvents, nil, nil, nil, nil, nil)
+						db, mockEvents, nil, nil, nil, nil, nil, nil)
 				})
 
 				It("OLM register default value - only builtins", func() {
@@ -3958,7 +3958,7 @@ var _ = Describe("UploadClusterIngressCert test", func() {
 		bm = createInventory(db, cfg)
 		mockOperators := operators.NewMockAPI(ctrl)
 		bm.clusterApi = cluster.NewManager(cluster.Config{}, common.GetTestLog().WithField("pkg", "cluster-monitor"),
-			db, nil, nil, nil, nil, nil, mockOperators)
+			db, nil, nil, nil, nil, nil, mockOperators, nil)
 		c = common.Cluster{Cluster: models.Cluster{
 			ID:               &clusterID,
 			OpenshiftVersion: common.TestDefaultConfig.OpenShiftVersion,
@@ -5557,7 +5557,7 @@ var _ = Describe("TestRegisterCluster", func() {
 		db = common.PrepareTestDB(dbName)
 		bm = createInventory(db, cfg)
 		bm.clusterApi = cluster.NewManager(cluster.Config{}, common.GetTestLog().WithField("pkg", "cluster-monitor"),
-			db, mockEvents, nil, nil, nil, nil, nil)
+			db, mockEvents, nil, nil, nil, nil, nil, nil)
 	})
 
 	AfterEach(func() {
@@ -5769,7 +5769,7 @@ var _ = Describe("AMS subscriptions", func() {
 	BeforeEach(func() {
 		db = common.PrepareTestDB(dbName)
 		bm = createInventory(db, cfg)
-		bm.clusterApi = cluster.NewManager(cluster.Config{}, common.GetTestLog(), db, mockEvents, nil, nil, nil, nil, nil)
+		bm.clusterApi = cluster.NewManager(cluster.Config{}, common.GetTestLog(), db, mockEvents, nil, nil, nil, nil, nil, nil)
 	})
 
 	AfterEach(func() {

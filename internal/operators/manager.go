@@ -29,7 +29,7 @@ type API interface {
 	ValidateHost(ctx context.Context, cluster *common.Cluster, host *models.Host) ([]api.ValidationResult, error)
 	// GenerateManifests generates manifests for all enabled operators.
 	// Returns map assigning manifest content to its desired file name
-	GenerateManifests(cluster *common.Cluster) (map[string]string, error)
+	GenerateManifests(cluster *common.Cluster) (map[string][]byte, error)
 	// AnyOLMOperatorEnabled checks whether any OLM operator has been enabled for the given cluster
 	AnyOLMOperatorEnabled(cluster *common.Cluster) bool
 	// UpdateDependencies amends the list of requested additional operators with any missing dependencies
@@ -48,7 +48,7 @@ type API interface {
 
 // GenerateManifests generates manifests for all enabled operators.
 // Returns map assigning manifest content to its desired file name
-func (mgr *Manager) GenerateManifests(cluster *common.Cluster) (map[string]string, error) {
+func (mgr *Manager) GenerateManifests(cluster *common.Cluster) (map[string][]byte, error) {
 	// TODO: cluster should already contain up-to-date list of operators - implemented here for now to replicate
 	// the original behaviour
 	err := mgr.UpdateDependencies(cluster)
@@ -56,29 +56,25 @@ func (mgr *Manager) GenerateManifests(cluster *common.Cluster) (map[string]strin
 		return nil, err
 	}
 
-	operatorManifests := make(map[string]string)
+	operatorManifests := make(map[string][]byte)
 
 	// Generate manifests for all the generic operators
 	for _, clusterOperator := range cluster.MonitoredOperators {
 		if clusterOperator.OperatorType != models.OperatorTypeOlm {
 			continue
 		}
-
 		operator := mgr.olmOperators[clusterOperator.Name]
 		if operator != nil {
 			manifests, err := operator.GenerateManifests(cluster)
 			if err != nil {
-				mgr.log.Error(fmt.Sprintf("Cannot generate %s manifests due to ", clusterOperator.Name), err)
+				mgr.log.Error(fmt.Sprintf("Cannot generate %s manifests due to %s", clusterOperator.Name, err))
 				return nil, err
 			}
-			if manifests != nil {
-				for k, v := range manifests.Files {
-					operatorManifests[k] = v
-				}
+			for k, v := range manifests {
+				operatorManifests[k] = v
 			}
 		}
 	}
-
 	return operatorManifests, nil
 }
 
@@ -303,7 +299,11 @@ func (mgr *Manager) GetSupportedOperatorsByType(operatorType models.OperatorType
 
 	for _, operator := range mgr.GetMonitoredOperatorsList() {
 		if operator.OperatorType == operatorType {
-			operator, _ = mgr.GetOperatorByName(operator.Name)
+			operator, err := mgr.GetOperatorByName(operator.Name)
+			if err != nil {
+				mgr.log.Warnf("Error while retrieving operator %s of type %s:", operator.Name, operator.OperatorType, err.Error())
+				continue
+			}
 			operators = append(operators, operator)
 		}
 	}

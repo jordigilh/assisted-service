@@ -27,6 +27,7 @@ import (
 	logutil "github.com/openshift/assisted-service/pkg/log"
 	"github.com/openshift/assisted-service/pkg/requestid"
 	"github.com/openshift/assisted-service/pkg/s3wrapper"
+	"github.com/openshift/assisted-service/restapi"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/thoas/go-funk"
@@ -113,42 +114,46 @@ type Config struct {
 
 type Manager struct {
 	Config
-	log                   logrus.FieldLogger
-	db                    *gorm.DB
-	registrationAPI       RegistrationAPI
-	installationAPI       InstallationAPI
-	eventsHandler         events.Handler
-	sm                    stateswitch.StateMachine
-	metricAPI             metrics.API
-	manifestsGeneratorAPI network.ManifestsGeneratorAPI
-	hostAPI               host.API
-	rp                    *refreshPreprocessor
-	leaderElector         leader.Leader
-	prevMonitorInvokedAt  time.Time
+	log                          logrus.FieldLogger
+	db                           *gorm.DB
+	registrationAPI              RegistrationAPI
+	installationAPI              InstallationAPI
+	eventsHandler                events.Handler
+	sm                           stateswitch.StateMachine
+	metricAPI                    metrics.API
+	networkManifestGeneratorAPI  network.ManifestGeneratorAPI
+	operatorManifestGeneratorAPI operators.API
+	hostAPI                      host.API
+	rp                           *refreshPreprocessor
+	leaderElector                leader.Leader
+	prevMonitorInvokedAt         time.Time
+	manifestsAPI                 restapi.ManifestsAPI
 }
 
 func NewManager(cfg Config, log logrus.FieldLogger, db *gorm.DB, eventsHandler events.Handler,
-	hostAPI host.API, metricApi metrics.API, manifestsGeneratorAPI network.ManifestsGeneratorAPI,
-	leaderElector leader.Leader, operatorsApi operators.API) *Manager {
+	hostAPI host.API, metricApi metrics.API, networkManifestGeneratorAPI network.ManifestGeneratorAPI,
+	leaderElector leader.Leader, operatorsAPI operators.API, manifestsAPI restapi.ManifestsAPI) *Manager {
 	th := &transitionHandler{
 		log:           log,
 		db:            db,
 		prepareConfig: cfg.PrepareConfig,
 	}
 	return &Manager{
-		Config:                cfg,
-		log:                   log,
-		db:                    db,
-		registrationAPI:       NewRegistrar(log, db),
-		installationAPI:       NewInstaller(log, db),
-		eventsHandler:         eventsHandler,
-		sm:                    NewClusterStateMachine(th),
-		metricAPI:             metricApi,
-		manifestsGeneratorAPI: manifestsGeneratorAPI,
-		rp:                    newRefreshPreprocessor(log, hostAPI, operatorsApi),
-		hostAPI:               hostAPI,
-		leaderElector:         leaderElector,
-		prevMonitorInvokedAt:  time.Now(),
+		Config:                       cfg,
+		log:                          log,
+		db:                           db,
+		registrationAPI:              NewRegistrar(log, db),
+		installationAPI:              NewInstaller(log, db),
+		eventsHandler:                eventsHandler,
+		sm:                           NewClusterStateMachine(th),
+		metricAPI:                    metricApi,
+		networkManifestGeneratorAPI:  networkManifestGeneratorAPI,
+		manifestsAPI:                 manifestsAPI,
+		rp:                           newRefreshPreprocessor(log, hostAPI, operatorsAPI),
+		hostAPI:                      hostAPI,
+		leaderElector:                leaderElector,
+		prevMonitorInvokedAt:         time.Now(),
+		operatorManifestGeneratorAPI: operatorsAPI,
 	}
 }
 
@@ -551,10 +556,9 @@ func (m *Manager) CompleteInstallation(ctx context.Context, c *common.Cluster, s
 func (m *Manager) PrepareForInstallation(ctx context.Context, c *common.Cluster, db *gorm.DB) error {
 	err := m.sm.Run(TransitionTypePrepareForInstallation, newStateCluster(c),
 		&TransitionArgsPrepareForInstallation{
-			ctx:                ctx,
-			db:                 db,
-			manifestsGenerator: m.manifestsGeneratorAPI,
-			metricApi:          m.metricAPI,
+			ctx:       ctx,
+			db:        db,
+			metricApi: m.metricAPI,
 		},
 	)
 	return err
@@ -828,14 +832,45 @@ func (m *Manager) GetClusterByKubeKey(key types.NamespacedName) (*common.Cluster
 }
 
 func (m *Manager) GenerateAdditionalManifests(ctx context.Context, cluster *common.Cluster) error {
-	if err := m.manifestsGeneratorAPI.AddChronyManifest(ctx, logutil.FromContext(ctx, m.log), cluster); err != nil {
+	manifests, err := m.networkManifestGeneratorAPI.AddChronyManifest(ctx, cluster)
+	if err != nil {
 		return errors.Wrap(err, "failed to add chrony manifest")
 	}
-
+	m.createManifests(ctx, cluster, manifests)
 	if common.IsSingleNodeCluster(cluster) {
-		if err := m.manifestsGeneratorAPI.AddDnsmasqForSingleNode(ctx, logutil.FromContext(ctx, m.log), cluster); err != nil {
-			return errors.Wrap(err, "failed to add dnsmasq manifest")
+		manifests, err = m.networkManifestGeneratorAPI.AddDnsmasqForSingleNode(ctx, cluster)
+		if err != nil {
+			return err
 		}
+		m.createManifests(ctx, cluster, manifests)
 	}
+	manifests, err = m.operatorManifestGeneratorAPI.GenerateManifests(cluster)
+	if err != nil {
+		return err
+	}
+	m.createManifests(ctx, cluster, manifests)
+	return nil
+
+}
+
+func (m *Manager) createManifests(ctx context.Context, cluster *common.Cluster, manifests map[string][]byte) error {
+	// for filename, content := range manifests {
+	// 	// all relevant logs of creating manifest will be inside CreateClusterManifest
+	// 	response := m.manifestsAPI.CreateClusterManifest(ctx, operations.CreateClusterManifestParams{
+	// 		ClusterID: *cluster.ID,
+	// 		CreateManifestParams: &models.CreateManifestParams{
+	// 			Content:  swag.String(base64.StdEncoding.EncodeToString(content)),
+	// 			FileName: &filename,
+	// 			Folder:   swag.String(models.ManifestFolderOpenshift),
+	// 		},
+	// 	})
+
+	// 	if _, ok := response.(*operations.CreateClusterManifestCreated); !ok {
+	// 		if apiErr, ok := response.(*common.ApiErrorResponse); ok {
+	// 			return errors.Wrapf(apiErr, "Failed to create manifest %s", filename)
+	// 		}
+	// 		return errors.Errorf("Failed to create manifest %s", filename)
+	// 	}
+	// }
 	return nil
 }

@@ -8,57 +8,58 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	common "github.com/openshift/assisted-service/internal/common"
-	logrus "github.com/sirupsen/logrus"
 	reflect "reflect"
 )
 
-// MockManifestsGeneratorAPI is a mock of ManifestsGeneratorAPI interface
-type MockManifestsGeneratorAPI struct {
+// MockManifestGeneratorAPI is a mock of ManifestGeneratorAPI interface
+type MockManifestGeneratorAPI struct {
 	ctrl     *gomock.Controller
-	recorder *MockManifestsGeneratorAPIMockRecorder
+	recorder *MockManifestGeneratorAPIMockRecorder
 }
 
-// MockManifestsGeneratorAPIMockRecorder is the mock recorder for MockManifestsGeneratorAPI
-type MockManifestsGeneratorAPIMockRecorder struct {
-	mock *MockManifestsGeneratorAPI
+// MockManifestGeneratorAPIMockRecorder is the mock recorder for MockManifestGeneratorAPI
+type MockManifestGeneratorAPIMockRecorder struct {
+	mock *MockManifestGeneratorAPI
 }
 
-// NewMockManifestsGeneratorAPI creates a new mock instance
-func NewMockManifestsGeneratorAPI(ctrl *gomock.Controller) *MockManifestsGeneratorAPI {
-	mock := &MockManifestsGeneratorAPI{ctrl: ctrl}
-	mock.recorder = &MockManifestsGeneratorAPIMockRecorder{mock}
+// NewMockManifestGeneratorAPI creates a new mock instance
+func NewMockManifestGeneratorAPI(ctrl *gomock.Controller) *MockManifestGeneratorAPI {
+	mock := &MockManifestGeneratorAPI{ctrl: ctrl}
+	mock.recorder = &MockManifestGeneratorAPIMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockManifestsGeneratorAPI) EXPECT() *MockManifestsGeneratorAPIMockRecorder {
+func (m *MockManifestGeneratorAPI) EXPECT() *MockManifestGeneratorAPIMockRecorder {
 	return m.recorder
 }
 
-// AddChronyManifest mocks base method
-func (m *MockManifestsGeneratorAPI) AddChronyManifest(ctx context.Context, log logrus.FieldLogger, c *common.Cluster) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddChronyManifest", ctx, log, c)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddChronyManifest indicates an expected call of AddChronyManifest
-func (mr *MockManifestsGeneratorAPIMockRecorder) AddChronyManifest(ctx, log, c interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddChronyManifest", reflect.TypeOf((*MockManifestsGeneratorAPI)(nil).AddChronyManifest), ctx, log, c)
-}
-
 // AddDnsmasqForSingleNode mocks base method
-func (m *MockManifestsGeneratorAPI) AddDnsmasqForSingleNode(ctx context.Context, log logrus.FieldLogger, c *common.Cluster) error {
+func (m *MockManifestGeneratorAPI) AddDnsmasqForSingleNode(ctx context.Context, cluster *common.Cluster) (map[string][]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddDnsmasqForSingleNode", ctx, log, c)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "AddDnsmasqForSingleNode", ctx, cluster)
+	ret0, _ := ret[0].(map[string][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AddDnsmasqForSingleNode indicates an expected call of AddDnsmasqForSingleNode
-func (mr *MockManifestsGeneratorAPIMockRecorder) AddDnsmasqForSingleNode(ctx, log, c interface{}) *gomock.Call {
+func (mr *MockManifestGeneratorAPIMockRecorder) AddDnsmasqForSingleNode(ctx, cluster interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDnsmasqForSingleNode", reflect.TypeOf((*MockManifestsGeneratorAPI)(nil).AddDnsmasqForSingleNode), ctx, log, c)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDnsmasqForSingleNode", reflect.TypeOf((*MockManifestGeneratorAPI)(nil).AddDnsmasqForSingleNode), ctx, cluster)
+}
+
+// AddChronyManifest mocks base method
+func (m *MockManifestGeneratorAPI) AddChronyManifest(ctx context.Context, cluster *common.Cluster) (map[string][]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddChronyManifest", ctx, cluster)
+	ret0, _ := ret[0].(map[string][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddChronyManifest indicates an expected call of AddChronyManifest
+func (mr *MockManifestGeneratorAPIMockRecorder) AddChronyManifest(ctx, cluster interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddChronyManifest", reflect.TypeOf((*MockManifestGeneratorAPI)(nil).AddChronyManifest), ctx, cluster)
 }
