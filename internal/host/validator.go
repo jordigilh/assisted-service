@@ -310,6 +310,9 @@ func (v *validator) hasMemoryForRole(c *validationContext) ValidationStatus {
 	if err != nil {
 		return ValidationFailure
 	}
+	if c.inventory.Memory.UsableBytes == 0 {
+		return ValidationFailure
+	}
 	switch c.host.Role {
 	case models.HostRoleMaster:
 		return boolValue(c.inventory.Memory.UsableBytes >= mem)
