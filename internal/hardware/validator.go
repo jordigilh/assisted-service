@@ -25,6 +25,7 @@ type Validator interface {
 	GetClusterHostRequirements(ctx context.Context, cluster *common.Cluster, host *models.Host) (*models.ClusterHostRequirements, error)
 	DiskIsEligible(disk *models.Disk) []string
 	ListEligibleDisks(inventory *models.Inventory) []*models.Disk
+	GetHostRequirementsForVersion(role models.HostRole, openShiftVersion string) models.HostRequirementsRole
 }
 
 func NewValidator(log logrus.FieldLogger, cfg ValidatorCfg, operatorsAPI operators.API) Validator {

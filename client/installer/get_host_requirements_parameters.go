@@ -19,7 +19,7 @@ import (
 // NewGetHostRequirementsParams creates a new GetHostRequirementsParams object
 // with the default values initialized.
 func NewGetHostRequirementsParams() *GetHostRequirementsParams {
-
+	var ()
 	return &GetHostRequirementsParams{
 
 		timeout: cr.DefaultTimeout,
@@ -29,7 +29,7 @@ func NewGetHostRequirementsParams() *GetHostRequirementsParams {
 // NewGetHostRequirementsParamsWithTimeout creates a new GetHostRequirementsParams object
 // with the default values initialized, and the ability to set a timeout on a request
 func NewGetHostRequirementsParamsWithTimeout(timeout time.Duration) *GetHostRequirementsParams {
-
+	var ()
 	return &GetHostRequirementsParams{
 
 		timeout: timeout,
@@ -39,7 +39,7 @@ func NewGetHostRequirementsParamsWithTimeout(timeout time.Duration) *GetHostRequ
 // NewGetHostRequirementsParamsWithContext creates a new GetHostRequirementsParams object
 // with the default values initialized, and the ability to set a context for a request
 func NewGetHostRequirementsParamsWithContext(ctx context.Context) *GetHostRequirementsParams {
-
+	var ()
 	return &GetHostRequirementsParams{
 
 		Context: ctx,
@@ -49,7 +49,7 @@ func NewGetHostRequirementsParamsWithContext(ctx context.Context) *GetHostRequir
 // NewGetHostRequirementsParamsWithHTTPClient creates a new GetHostRequirementsParams object
 // with the default values initialized, and the ability to set a custom HTTPClient for a request
 func NewGetHostRequirementsParamsWithHTTPClient(client *http.Client) *GetHostRequirementsParams {
-
+	var ()
 	return &GetHostRequirementsParams{
 		HTTPClient: client,
 	}
@@ -59,6 +59,13 @@ func NewGetHostRequirementsParamsWithHTTPClient(client *http.Client) *GetHostReq
 for the get host requirements operation typically these are written to a http.Request
 */
 type GetHostRequirementsParams struct {
+
+	/*OpenshiftVersion
+	  Version of the OpenShift cluster to get the host requirements from.
+
+	*/
+	OpenshiftVersion *string
+
 	timeout    time.Duration
 	Context    context.Context
 	HTTPClient *http.Client
@@ -97,6 +104,17 @@ func (o *GetHostRequirementsParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithOpenshiftVersion adds the openshiftVersion to the get host requirements params
+func (o *GetHostRequirementsParams) WithOpenshiftVersion(openshiftVersion *string) *GetHostRequirementsParams {
+	o.SetOpenshiftVersion(openshiftVersion)
+	return o
+}
+
+// SetOpenshiftVersion adds the openshiftVersion to the get host requirements params
+func (o *GetHostRequirementsParams) SetOpenshiftVersion(openshiftVersion *string) {
+	o.OpenshiftVersion = openshiftVersion
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *GetHostRequirementsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -104,6 +122,22 @@ func (o *GetHostRequirementsParams) WriteToRequest(r runtime.ClientRequest, reg 
 		return err
 	}
 	var res []error
+
+	if o.OpenshiftVersion != nil {
+
+		// query param openshift_version
+		var qrOpenshiftVersion string
+		if o.OpenshiftVersion != nil {
+			qrOpenshiftVersion = *o.OpenshiftVersion
+		}
+		qOpenshiftVersion := qrOpenshiftVersion
+		if qOpenshiftVersion != "" {
+			if err := r.SetQueryParam("openshift_version", qOpenshiftVersion); err != nil {
+				return err
+			}
+		}
+
+	}
 
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)

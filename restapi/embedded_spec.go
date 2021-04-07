@@ -4486,6 +4486,14 @@ func init() {
           "installer"
         ],
         "operationId": "GetHostRequirements",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Version of the OpenShift cluster to get the host requirements from.",
+            "name": "openshift_version",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success.",
@@ -11868,6 +11876,14 @@ func init() {
           "installer"
         ],
         "operationId": "GetHostRequirements",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Version of the OpenShift cluster to get the host requirements from.",
+            "name": "openshift_version",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success.",

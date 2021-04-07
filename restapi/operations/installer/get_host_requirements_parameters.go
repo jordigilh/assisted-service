@@ -9,7 +9,9 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/strfmt"
 )
 
 // NewGetHostRequirementsParams creates a new GetHostRequirementsParams object
@@ -27,6 +29,11 @@ type GetHostRequirementsParams struct {
 
 	// HTTP Request Object
 	HTTPRequest *http.Request `json:"-"`
+
+	/*Version of the OpenShift cluster to get the host requirements from.
+	  In: query
+	*/
+	OpenshiftVersion *string
 }
 
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
@@ -38,8 +45,33 @@ func (o *GetHostRequirementsParams) BindRequest(r *http.Request, route *middlewa
 
 	o.HTTPRequest = r
 
+	qs := runtime.Values(r.URL.Query())
+
+	qOpenshiftVersion, qhkOpenshiftVersion, _ := qs.GetOK("openshift_version")
+	if err := o.bindOpenshiftVersion(qOpenshiftVersion, qhkOpenshiftVersion, route.Formats); err != nil {
+		res = append(res, err)
+	}
+
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+// bindOpenshiftVersion binds and validates parameter OpenshiftVersion from query.
+func (o *GetHostRequirementsParams) bindOpenshiftVersion(rawData []string, hasKey bool, formats strfmt.Registry) error {
+	var raw string
+	if len(rawData) > 0 {
+		raw = rawData[len(rawData)-1]
+	}
+
+	// Required: false
+	// AllowEmptyValue: false
+	if raw == "" { // empty values pass all other validations
+		return nil
+	}
+
+	o.OpenshiftVersion = &raw
+
 	return nil
 }

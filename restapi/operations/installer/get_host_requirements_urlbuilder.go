@@ -13,7 +13,11 @@ import (
 
 // GetHostRequirementsURL generates an URL for the get host requirements operation
 type GetHostRequirementsURL struct {
+	OpenshiftVersion *string
+
 	_basePath string
+	// avoid unkeyed usage
+	_ struct{}
 }
 
 // WithBasePath sets the base path for this url builder, only required when it's different from the
@@ -42,6 +46,18 @@ func (o *GetHostRequirementsURL) Build() (*url.URL, error) {
 		_basePath = "/api/assisted-install/v1"
 	}
 	_result.Path = golangswaggerpaths.Join(_basePath, _path)
+
+	qs := make(url.Values)
+
+	var openshiftVersionQ string
+	if o.OpenshiftVersion != nil {
+		openshiftVersionQ = *o.OpenshiftVersion
+	}
+	if openshiftVersionQ != "" {
+		qs.Set("openshift_version", openshiftVersionQ)
+	}
+
+	_result.RawQuery = qs.Encode()
 
 	return &_result, nil
 }

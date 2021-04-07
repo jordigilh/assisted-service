@@ -2334,7 +2334,21 @@ func (b *bareMetalInventory) GetClusterInternal(ctx context.Context, params inst
 	return cluster, nil
 }
 
-func (b *bareMetalInventory) GetHostRequirements(_ context.Context, _ installer.GetHostRequirementsParams) middleware.Responder {
+func (b *bareMetalInventory) GetHostRequirements(ctx context.Context, params installer.GetHostRequirementsParams) middleware.Responder {
+
+	if params.ClusterID != nil {
+		cluster, err := b.getCluster(ctx, params.ClusterID.String(), common.UseEagerLoading)
+		if err != nil {
+			return common.GenerateErrorResponder(err)
+		}
+		masterReqs := b.hwValidator.GetHostRequirementsForVersion(models.HostRoleMaster, cluster.OpenshiftVersion)
+		workerReqs := b.hwValidator.GetHostRequirementsForVersion(models.HostRoleWorker, cluster.OpenshiftVersion)
+		return installer.NewGetRoleRequirementsOK().WithPayload(
+			&models.HostRequirements{
+				Master: &masterReqs,
+				Worker: &workerReqs,
+			})
+	}
 	masterReqs := b.hostApi.GetHostRequirements(models.HostRoleMaster)
 	workerReqs := b.hostApi.GetHostRequirements(models.HostRoleWorker)
 	return installer.NewGetHostRequirementsOK().WithPayload(
@@ -4346,4 +4360,18 @@ func (b *bareMetalInventory) GetClusterHostRequirements(ctx context.Context, par
 	}
 
 	return installer.NewGetClusterHostRequirementsOK().WithPayload(requirementsList)
+}
+
+func (b *bareMetalInventory) GetRoleRequirements(ctx context.Context, params installer.GetRoleRequirementsParams) middleware.Responder {
+	cluster, err := b.getCluster(ctx, params.ClusterID.String(), common.UseEagerLoading)
+	if err != nil {
+		return common.GenerateErrorResponder(err)
+	}
+	masterReqs := b.hwValidator.GetHostRequirementsForVersion(models.HostRoleMaster, cluster.OpenshiftVersion)
+	workerReqs := b.hwValidator.GetHostRequirementsForVersion(models.HostRoleWorker, cluster.OpenshiftVersion)
+	return installer.NewGetRoleRequirementsOK().WithPayload(
+		&models.HostRequirements{
+			Master: &masterReqs,
+			Worker: &workerReqs,
+		})
 }
