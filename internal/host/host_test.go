@@ -2286,6 +2286,7 @@ var _ = Describe("Disabled Host Validation", func() {
 		disabledHostValidationEnvironmentName = "DISABLED_HOST_VALIDATIONS"
 		twoValidationIDs                      = "validation-1,validation-2"
 		malformedValue                        = "validation-1,,"
+		emptyValue                            = ""
 	)
 
 	AfterEach(func() {
@@ -2305,6 +2306,16 @@ var _ = Describe("Disabled Host Validation", func() {
 		Expect(err).To(HaveOccurred())
 		fmt.Println("\n" + err.Error())
 		Expect(err.Error()).To(Equal("envconfig.Process: assigning MYAPP_DISABLED_HOST_VALIDATIONS to DisabledHostvalidations: converting 'validation-1,,' to type host.DisabledHostValidations. details: empty host validation ID found in 'validation-1,,'"))
+	})
+	It("should not use default values when empty", func() {
+		Expect(os.Getenv(disabledHostValidationEnvironmentName)).To(BeEmpty())
+		cfg := Config{}
+		Expect(envconfig.Process(common.EnvConfigPrefix, &cfg)).ToNot(HaveOccurred())
+		defaultValue := cfg.DisabledHostvalidations
+		Expect(os.Setenv(disabledHostValidationEnvironmentName, emptyValue)).NotTo(HaveOccurred())
+		cfg = Config{}
+		Expect(envconfig.Process(common.EnvConfigPrefix, &cfg)).ToNot(HaveOccurred())
+		Expect(cfg.DisabledHostvalidations).NotTo(Equal(defaultValue))
 	})
 
 })
