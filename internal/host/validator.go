@@ -747,7 +747,9 @@ func (v *validator) printSufficientNetworkLatencyRequirementForRole(c *validatio
 			return fmt.Sprintf("Error while attempting to validate network latency: %s", err)
 		}
 		sort.Strings(hostNames)
-		return fmt.Sprintf("Network latency requirements of less or equals than %.3f ms not met for connectivity between %s and %s.", *c.clusterHostRequirements.Total.NetworkLatencyThresholdMs, c.host.RequestedHostname, strings.Join(hostNames, ","))
+		return fmt.Sprintf("Network latency requirements of less or equals than %.3f ms not met for connectivity between %s and %s.", *c.clusterHostRequirements.Total.NetworkLatencyThresholdMs, c.host.ID, strings.Join(hostNames, ","))
+	case ValidationPending:
+		return "Missing network latency information."
 	default:
 		return fmt.Sprintf("Unexpected status %s", status)
 	}
@@ -808,7 +810,9 @@ func (v *validator) printSufficientPacketLossRequirementForRole(c *validationCon
 			return fmt.Sprintf("Error while attempting to validate packet loss validation: %s", err)
 		}
 		sort.Strings(hostNames)
-		return fmt.Sprintf("Packet loss percentage requirement of less or equals than %.2f%% not met for connectivity between %s and %s.", *c.clusterHostRequirements.Total.PacketLossPercentage, c.host.RequestedHostname, strings.Join(hostNames, ","))
+		return fmt.Sprintf("Packet loss percentage requirement of less or equals than %.2f%% not met for connectivity between %s and %s.", *c.clusterHostRequirements.Total.PacketLossPercentage, c.host.ID, strings.Join(hostNames, ","))
+	case ValidationPending:
+		return "Missing packet loss information."
 	default:
 		return fmt.Sprintf("Unexpected status %s", status)
 	}
