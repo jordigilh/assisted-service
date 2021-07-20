@@ -1255,6 +1255,7 @@ var _ = Describe("Refresh Host", func() {
 		host              models.Host
 		cluster           common.Cluster
 		mockEvents        *events.MockHandler
+		mockMetric        *metrics.MockAPI
 		ctrl              *gomock.Controller
 		dbName            string
 		mockHwValidator   *hardware.MockValidator
@@ -1265,6 +1266,7 @@ var _ = Describe("Refresh Host", func() {
 	BeforeEach(func() {
 		db, dbName = common.PrepareTestDB()
 		ctrl = gomock.NewController(GinkgoT())
+		mockMetric = metrics.NewMockAPI(ctrl)
 		mockEvents = events.NewMockHandler(ctrl)
 		mockHwValidator = hardware.NewMockValidator(ctrl)
 		validatorCfg = createValidatorCfg()
@@ -4013,7 +4015,9 @@ var _ = Describe("Refresh Host", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		BeforeEach(func() {
 			mockDefaultClusterHostRequirements(mockHwValidator)
-			hapi = NewManager(common.GetTestLog(), db, mockEvents, mockHwValidator, nil, validatorCfg, nil, defaultConfig, nil, operatorsManager)
+			hapi = NewManager(common.GetTestLog(), db, mockEvents, mockHwValidator, nil, validatorCfg, mockMetric, defaultConfig, nil, operatorsManager)
+			mockMetric.EXPECT().NetworkLatencyBetweenHosts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+			mockMetric.EXPECT().PacketLossBetweenHosts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 		})
 
 		const (

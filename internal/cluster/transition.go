@@ -16,10 +16,12 @@ import (
 	"github.com/openshift/assisted-service/internal/dns"
 	"github.com/openshift/assisted-service/internal/events"
 	"github.com/openshift/assisted-service/internal/host"
+	"github.com/openshift/assisted-service/internal/host/hostutil"
 	"github.com/openshift/assisted-service/internal/metrics"
 	"github.com/openshift/assisted-service/internal/network"
 	"github.com/openshift/assisted-service/internal/operators"
 	"github.com/openshift/assisted-service/models"
+	"github.com/openshift/assisted-service/pkg/commonutils"
 	logutil "github.com/openshift/assisted-service/pkg/log"
 	"github.com/openshift/assisted-service/pkg/ocm"
 	"github.com/openshift/assisted-service/pkg/s3wrapper"
@@ -532,6 +534,8 @@ func (th *transitionHandler) InstallCluster(sw stateswitch.StateSwitch, args sta
 	// send metric and event that installation process has been started
 	params.metricApi.InstallationStarted(cluster.OpenshiftVersion, *cluster.ID, cluster.EmailDomain, strconv.FormatBool(swag.BoolValue(cluster.UserManagedNetworking)))
 	params.metricApi.ClusterHostInstallationCount(cluster.EmailDomain, len(cluster.Hosts), cluster.OpenshiftVersion)
+	captureMetricsForNetworkLatency(ctx, params.metricApi, cluster.OpenshiftVersion, cluster.Hosts)
+	captureMetricsForPacketLoss(ctx, params.metricApi, cluster.OpenshiftVersion, cluster.Hosts)
 	return nil
 }
 
@@ -638,4 +642,48 @@ func addExtraParams(log logrus.FieldLogger, cluster *common.Cluster, clusterStat
 		}
 	}
 	return extra, nil
+}
+
+func captureMetricsForNetworkLatency(ctx context.Context, m metrics.API, clusterVersion string, hosts []*models.Host) {
+	log := logutil.FromContext(ctx, logrus.New())
+	defer commonutils.MeasureOperation("NetworkLatencyBetweenHostsInCluster", log, m)
+	for _, h := range hosts {
+		connectivityReport, err := hostutil.UnmarshalConnectivityReport(h.Connectivity)
+		if err != nil {
+			log.Warnf("unable to unmarshall host connectivity for %s:%s", h.ID, err)
+			continue
+		}
+		for _, r := range connectivityReport.RemoteHosts {
+			for _, l3 := range r.L3Connectivity {
+				_, targetRole, err := host.GetHostnameAndRoleByIP(l3.RemoteIPAddress, hosts)
+				if err != nil {
+					log.Warn(err)
+					continue
+				}
+				m.NetworkLatencyBetweenHosts(clusterVersion, h.Role, targetRole, l3.AverageRTTMs)
+			}
+		}
+	}
+}
+
+func captureMetricsForPacketLoss(ctx context.Context, m metrics.API, clusterVersion string, hosts []*models.Host) {
+	log := logutil.FromContext(ctx, logrus.New())
+	defer commonutils.MeasureOperation("PacketLossBetweenHostsInCluster", log, m)
+	for _, h := range hosts {
+		connectivityReport, err := hostutil.UnmarshalConnectivityReport(h.Connectivity)
+		if err != nil {
+			log.Warnf("unable to unmarshall host connectivity for %s:%s", h.ID, err)
+			continue
+		}
+		for _, r := range connectivityReport.RemoteHosts {
+			for _, l3 := range r.L3Connectivity {
+				_, targetRole, err := host.GetHostnameAndRoleByIP(l3.RemoteIPAddress, hosts)
+				if err != nil {
+					log.Warn(err)
+					continue
+				}
+				m.PacketLossBetweenHosts(clusterVersion, h.Role, targetRole, l3.PacketLossPercentage)
+			}
+		}
+	}
 }

@@ -178,7 +178,7 @@ func NewManager(log logrus.FieldLogger, db *gorm.DB, eventsHandler events.Handle
 		hwValidator:    hwValidator,
 		eventsHandler:  eventsHandler,
 		sm:             NewHostStateMachine(th),
-		rp:             newRefreshPreprocessor(log, hwValidatorCfg, hwValidator, operatorsApi, config.DisabledHostvalidations),
+		rp:             newRefreshPreprocessor(log, hwValidatorCfg, hwValidator, operatorsApi, config.DisabledHostvalidations, metricApi),
 		metricApi:      metricApi,
 		Config:         *config,
 		leaderElector:  leaderElector,

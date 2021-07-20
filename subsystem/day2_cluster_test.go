@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/assisted-service/client/installer"
 	"github.com/openshift/assisted-service/internal/bminventory"
+	"github.com/openshift/assisted-service/internal/host/hostutil"
 	"github.com/openshift/assisted-service/models"
 )
 
@@ -136,7 +137,8 @@ var _ = Describe("Day2 cluster tests", func() {
 		checkStepsInList(steps, []models.StepType{models.StepTypeInventory}, 1)
 
 		By("checking insufficient state state - one host, no connectivity check")
-		generateEssentialHostSteps(ctx, h, "h1host")
+		ips := hostutil.GenerateIPv4Addresses(2, defaultCIDRv4)
+		generateEssentialHostSteps(ctx, h, "h1host", ips[0])
 		waitForHostState(ctx, clusterID, *h.ID, "insufficient", 60*time.Second)
 		steps = getNextSteps(clusterID, *host.ID)
 		checkStepsInList(steps, []models.StepType{models.StepTypeInventory, models.StepTypeAPIVipConnectivityCheck}, 2)
@@ -153,7 +155,7 @@ var _ = Describe("Day2 cluster tests", func() {
 		h1 := getHost(clusterID, *host.ID)
 		host = &registerHost(clusterID).Host
 		h2 := getHost(clusterID, *host.ID)
-
+		ips := hostutil.GenerateIPv4Addresses(2, defaultCIDRv4)
 		By("checking discovery state")
 		Expect(*h1.Status).Should(Equal("discovering"))
 		steps := getNextSteps(clusterID, *h1.ID)
@@ -165,15 +167,15 @@ var _ = Describe("Day2 cluster tests", func() {
 		checkStepsInList(steps, []models.StepType{models.StepTypeInventory}, 1)
 
 		By("checking insufficient state state host2 ")
-		generateEssentialHostSteps(ctx, h2, "h2host")
-		generateConnectivityCheckPostStepReply(ctx, h2, true)
+		generateEssentialHostSteps(ctx, h2, "h2host", ips[1])
+		generateConnectivityCheckPostStepReply(ctx, h2, ips[0], true)
 		waitForHostState(ctx, clusterID, *h2.ID, "insufficient", 60*time.Second)
 		steps = getNextSteps(clusterID, *h2.ID)
 		checkStepsInList(steps, []models.StepType{models.StepTypeInventory, models.StepTypeAPIVipConnectivityCheck}, 2)
 
 		By("checking insufficient state state")
-		generateEssentialHostSteps(ctx, h1, "h1host")
-		generateConnectivityCheckPostStepReply(ctx, h1, true)
+		generateEssentialHostSteps(ctx, h1, "h1host", ips[0])
+		generateConnectivityCheckPostStepReply(ctx, h1, ips[1], true)
 		waitForHostState(ctx, clusterID, *h1.ID, "insufficient", 60*time.Second)
 		steps = getNextSteps(clusterID, *h1.ID)
 		checkStepsInList(steps, []models.StepType{models.StepTypeInventory, models.StepTypeAPIVipConnectivityCheck, models.StepTypeConnectivityCheck}, 3)
@@ -188,7 +190,7 @@ var _ = Describe("Day2 cluster tests", func() {
 	It("check installation - one node", func() {
 		host := &registerHost(clusterID).Host
 		h := getHost(clusterID, *host.ID)
-		generateEssentialHostSteps(ctx, h, "hostname")
+		generateEssentialHostSteps(ctx, h, "hostname", defaultCIDRv4)
 		waitForHostState(ctx, clusterID, *h.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h, true)
 		waitForHostState(ctx, clusterID, *h.ID, "known", 60*time.Second)
@@ -208,7 +210,7 @@ var _ = Describe("Day2 cluster tests", func() {
 	It("check installation - one node", func() {
 		host := &registerHost(clusterID).Host
 		h := getHost(clusterID, *host.ID)
-		generateEssentialHostSteps(ctx, h, "hostname")
+		generateEssentialHostSteps(ctx, h, "hostname", defaultCIDRv4)
 		waitForHostState(ctx, clusterID, *h.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h, true)
 		waitForHostState(ctx, clusterID, *h.ID, "known", 60*time.Second)
@@ -232,15 +234,15 @@ var _ = Describe("Day2 cluster tests", func() {
 		h1 := getHost(clusterID, *host.ID)
 		host = &registerHost(clusterID).Host
 		h2 := getHost(clusterID, *host.ID)
-
-		generateEssentialHostSteps(ctx, h1, "hostname1")
-		generateConnectivityCheckPostStepReply(ctx, h1, true)
+		ips := hostutil.GenerateIPv4Addresses(2, defaultCIDRv4)
+		generateEssentialHostSteps(ctx, h1, "hostname1", ips[0])
+		generateConnectivityCheckPostStepReply(ctx, h1, ips[1], true)
 		waitForHostState(ctx, clusterID, *h1.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h1, true)
 		waitForHostState(ctx, clusterID, *h1.ID, "known", 60*time.Second)
 
-		generateEssentialHostSteps(ctx, h2, "hostname2")
-		generateConnectivityCheckPostStepReply(ctx, h2, true)
+		generateEssentialHostSteps(ctx, h2, "hostname2", ips[1])
+		generateConnectivityCheckPostStepReply(ctx, h2, ips[0], true)
 		waitForHostState(ctx, clusterID, *h2.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h2, true)
 		waitForHostState(ctx, clusterID, *h2.ID, "known", 60*time.Second)
@@ -278,11 +280,11 @@ var _ = Describe("Day2 cluster tests", func() {
 		h1 := getHost(clusterID, *host.ID)
 		host = &registerHost(clusterID).Host
 		h2 := getHost(clusterID, *host.ID)
-
-		generateEssentialHostSteps(ctx, h1, "hostname1")
+		ips := hostutil.GenerateIPv4Addresses(2, defaultCIDRv4)
+		generateEssentialHostSteps(ctx, h1, "hostname1", ips[0])
 		waitForHostState(ctx, clusterID, *h1.ID, "insufficient", 60*time.Second)
 
-		generateEssentialHostSteps(ctx, h2, "hostname2")
+		generateEssentialHostSteps(ctx, h2, "hostname2", ips[1])
 		waitForHostState(ctx, clusterID, *h2.ID, "insufficient", 60*time.Second)
 
 		_, err := userBMClient.Installer.InstallHosts(ctx, &installer.InstallHostsParams{ClusterID: clusterID})
@@ -302,7 +304,7 @@ var _ = Describe("Day2 cluster tests", func() {
 	It("check installation - install specific node", func() {
 		host := &registerHost(clusterID).Host
 		h := getHost(clusterID, *host.ID)
-		generateEssentialHostSteps(ctx, h, "hostname")
+		generateEssentialHostSteps(ctx, h, "hostname", defaultCIDRv4)
 		waitForHostState(ctx, clusterID, *h.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h, true)
 		waitForHostState(ctx, clusterID, *h.ID, "known", 60*time.Second)
@@ -322,7 +324,7 @@ var _ = Describe("Day2 cluster tests", func() {
 	It("check installation - node registers after reboot", func() {
 		host := &registerHost(clusterID).Host
 		h := getHost(clusterID, *host.ID)
-		generateEssentialHostSteps(ctx, h, "hostname")
+		generateEssentialHostSteps(ctx, h, "hostname", defaultCIDRv4)
 		waitForHostState(ctx, clusterID, *h.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h, true)
 		waitForHostState(ctx, clusterID, *h.ID, "known", 60*time.Second)
@@ -349,7 +351,7 @@ var _ = Describe("Day2 cluster tests", func() {
 	It("reset node after failed installation", func() {
 		host := &registerHost(clusterID).Host
 		h := getHost(clusterID, *host.ID)
-		generateEssentialHostSteps(ctx, h, "hostname")
+		generateEssentialHostSteps(ctx, h, "hostname", defaultCIDRv4)
 		waitForHostState(ctx, clusterID, *h.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h, true)
 		waitForHostState(ctx, clusterID, *h.ID, "known", 60*time.Second)
@@ -378,7 +380,7 @@ var _ = Describe("Day2 cluster tests", func() {
 	It("reset node during failed installation", func() {
 		host := &registerHost(clusterID).Host
 		h := getHost(clusterID, *host.ID)
-		generateEssentialHostSteps(ctx, h, "hostname")
+		generateEssentialHostSteps(ctx, h, "hostname", defaultCIDRv4)
 		waitForHostState(ctx, clusterID, *h.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h, true)
 		waitForHostState(ctx, clusterID, *h.ID, "known", 60*time.Second)
@@ -402,7 +404,7 @@ var _ = Describe("Day2 cluster tests", func() {
 	It("reset node failed install command", func() {
 		host := &registerHost(clusterID).Host
 		h := getHost(clusterID, *host.ID)
-		generateEssentialHostSteps(ctx, h, "hostname")
+		generateEssentialHostSteps(ctx, h, "hostname", defaultCIDRv4)
 		waitForHostState(ctx, clusterID, *h.ID, "insufficient", 60*time.Second)
 		generateApiVipPostStepReply(ctx, h, true)
 		waitForHostState(ctx, clusterID, *h.ID, "known", 60*time.Second)

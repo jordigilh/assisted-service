@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift/assisted-service/internal/hardware"
+	"github.com/openshift/assisted-service/internal/metrics"
 	"github.com/openshift/assisted-service/internal/operators"
 	"github.com/openshift/assisted-service/internal/operators/api"
 	"github.com/openshift/assisted-service/models"
@@ -37,12 +38,13 @@ type refreshPreprocessor struct {
 	disabledHostValidations DisabledHostValidations
 }
 
-func newRefreshPreprocessor(log logrus.FieldLogger, hwValidatorCfg *hardware.ValidatorCfg, hwValidator hardware.Validator, operatorsApi operators.API, disabledHostValidations DisabledHostValidations) *refreshPreprocessor {
+func newRefreshPreprocessor(log logrus.FieldLogger, hwValidatorCfg *hardware.ValidatorCfg, hwValidator hardware.Validator, operatorsApi operators.API, disabledHostValidations DisabledHostValidations, metricsAPI metrics.API) *refreshPreprocessor {
 	v := &validator{
 		log:            log,
 		hwValidatorCfg: hwValidatorCfg,
 		hwValidator:    hwValidator,
 		operatorsAPI:   operatorsApi,
+		metricsAPI:     metricsAPI,
 	}
 	return &refreshPreprocessor{
 		log:                     log,
